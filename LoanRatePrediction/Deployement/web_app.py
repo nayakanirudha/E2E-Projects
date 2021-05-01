@@ -1,10 +1,10 @@
 from flask import Flask, render_template,request
 from flasgger import Swagger
 import pickle
-import numpy as np
 import pandas as pd
 
 app = Flask(__name__)
+test_df = pd.read_csv("test_dataset.csv")
 pickle_file = open('logisticRegression.pkl','rb')
 classifier = pickle.load(pickle_file)
 Swagger(app)
@@ -13,7 +13,7 @@ Swagger(app)
 def base_route():
     return "Welcome to Loan Rate Prediction API",200
 
-@app.route("/predict",methods=['GET'])
+@app.route("/predictForSample",methods=['GET'])
 def predictRate():
     """Swagger App for Loan Rate Prediction
     --------
@@ -174,10 +174,32 @@ def predictRate():
                                   deliquency,income_label1,income_label2,income_label3,
                                   loan_label1,loan_label2,loan_label3]])
 
-    if(result in [1.0,"1.0"]) : return "Loan Rate Category 1"
-    if(result in [2.0,"2.0"]) : return "Loan Rate Category 2"
-    if(result in [3.0,"3.0"]) : return "Loan Rate Category 3"
+    if(result in [1.0,"1.0"]) : return "Loan Rate Category: 1"
+    if(result in [2.0,"2.0"]) : return "Loan Rate Category: 2"
+    if(result in [3.0,"3.0"]) : return "Loan Rate Category: 3"
 
+@app.route("/predictForLoanID",methods=['GET'])
+def predictRateforCustomer():
+    """Swagger App for Loan Rate Prediction
+    --------
+    -   name: Loan_ID
+        description : Enter the Loan ID of applicants 10164310 - 10273850
+        in: query
+        type: integer
+        required: true
+
+    responses:
+        200:
+            description : Predicted for file containing all Customers
+    """
+    print("Enter Loan ID of Applicants (Number between 10164310 - 10273850)")
+    Loan_ID = request.args.get("Loan_ID")
+    applicant_data = test_df[test_df["Loan_ID"] == int(Loan_ID)]
+    result = classifier.predict(applicant_data.drop(["Loan_ID", "Interest_Rate"], axis=1).values)
+
+    if(result in [1.0,"1.0"]) : return "Predicted Loan Rate Category: 1"
+    if(result in [2.0,"2.0"]) : return "Predicted Loan Rate Category: 2"
+    if(result in [3.0,"3.0"]) : return "Predicted Loan Rate Category: 3"
 
 if __name__ == "__main__":
     app.run(debug=True, host= "127.0.0.1", port= 5000)
